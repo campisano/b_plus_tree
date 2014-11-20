@@ -1,71 +1,105 @@
 #include "Node.h"
 
-#include <list>
 #include <sstream>
 #include <stdexcept>
 
 #include "Leaf.h"
 
-Node::Node(uint16_t _max_count, uint16_t _block_size)
+Node::Node(std::fstream & _fs_index, const uint16_t _max_count, const uint16_t _block_size) :
+    m_fs_index(_fs_index), m_max_count(_max_count), m_block_size(_block_size)
 {
-    m_max_count = _max_count;
-    m_block_size = _block_size;
     m_count = 0;
+
+    m_keys = new uint32_t[m_max_count - 1];
+    m_leaf_addresses = new uint64_t[m_max_count];
+
+    m_real_data_size =
+        sizeof(m_count) +
+        (m_max_count - 1) * sizeof(m_keys[0]) +
+        m_max_count * sizeof(m_leaf_addresses[0]);
+
+    if(m_block_size < m_real_data_size)
+    {
+        std::stringstream ss;
+        ss << "Block size is less then real leaf size:" << std::endl;
+        ss << "Block defined size = " << m_block_size << std::endl;
+        ss << "m_max_count = " << m_max_count << std::endl;
+        ss << "sizeof(m_count): " << sizeof(m_count) << std::endl;
+        ss << "sizeof(m_keys[0]): " << sizeof(m_keys[0]) << std::endl;
+        ss << "sizeof(m_leaf_addresses[0]): " << sizeof(m_leaf_addresses[0]) << std::endl;
+        ss << "m_max_count * sizeof(m_keys[0]) + m_max_count * sizeof(m_leaf_addresses[0]): " << m_max_count * sizeof(m_keys[0]) + m_max_count * sizeof(m_leaf_addresses[0]) << std::endl;
+        ss << "Total real leaf size = " << m_real_data_size << std::endl;
+
+        throw std::invalid_argument(ss.str());
+    }
 }
 
 Node::~Node()
 {
-    m_keys.clear();
+    delete m_leaf_addresses;
+    delete m_keys;
 
-    std::list<Leaf *>::iterator it;
-
-    for(it = m_leafs.begin(); it != m_leafs.end(); ++it)
-    {
-        delete (*it);
-    }
-
-    m_leafs.clear();
     m_count = 0;
 }
 
 
 // TODO [CMP]
-// faltam 2 coisas
-// - trocar de memória para arquivo
 // - implementar a criação de nodes, que cresca para cima
-
+#include <iostream>
 
 void Node::insert(uint32_t _new_key, uint64_t _new_address)
 {
-    // if there are subnodes
-    if(m_keys.size() > 0)
+    // first subnode
+    if(m_count == 0)
     {
-        std::list<uint32_t>::iterator it_keys = m_keys.begin();
-        std::list<Leaf *>::iterator it_leafs = m_leafs.begin();
+        m_keys[0] = _new_key;
+        m_leaf_addresses[0] = m_fs_index.tellp();
 
+        Leaf * new_leaf = new Leaf(m_max_count, m_block_size);
+        new_leaf->insert(_new_key, _new_address);
+        new_leaf->write(m_fs_index);
+
+        m_count = 1;
+    }
+    // if there are leafs
+    else if(m_count > 0)
+    {
+        /*
         // if first key is greather then new key
-        if((*it_keys) > _new_key)
+        if(m_keys[0] > _new_key)
         {
-            // insert new leaf at start, configuring next leaf as current
-            Leaf * new_leaf = new Leaf(m_max_count, m_block_size);
-            // TODO [CMP] leaf address to emulate disk reference is the (*it_keys), temporary
-            new_leaf->setNextLeafAddress((*it_keys));
-            new_leaf->insert(_new_key, _new_address);
-
-            //TODO [CMP] not used
             if(m_count == m_max_count)
             {
-                // split node and rotate
+                // split node and rotate //TODO [CMP] not implemented
+                throw std::out_of_range("Node is full, split not implemented");
             }
-            //else
+            else
             {
-                m_keys.push_front(_new_key);
-                m_leafs.push_front(new_leaf);
+                // shift all elements to next pos
+                for(uint16_t rpos = m_count; rpos > 0; --rpos)
+                {
+                    m_keys[rpos] = m_keys[rpos - 1];
+                    m_leaf_addresses[rpos] = m_leaf_addresses[rpos - 1];
+                }
+
+                m_keys[0] = _new_key;
+                m_leaf_addresses[0] = ftell(m_fs_index);
+
+                // insert new leaf at start, configuring next leaf as current
+                Leaf * new_leaf = new Leaf(m_max_count, m_block_size);
+                new_leaf->setNextLeafAddress(m_leaf_addresses[1]); // link with the old first
+                new_leaf->insert(_new_key, _new_address);
+                new_leaf->write(m_fs_index);
+
+                ++m_count;
             }
+
+            //TODO write node?
 
             return;
         }
-
+        */
+/*
         uint32_t key;
         Leaf * leaf;
         std::list<uint32_t>::iterator it_next_key;
@@ -108,12 +142,12 @@ void Node::insert(uint32_t _new_key, uint64_t _new_address)
                         uint32_t new_leaf_first_key = leaf->split(new_leaf, 0); // TODO [CMP] 0 is temporary
                         leaf->setNextLeafAddress(new_leaf_first_key);
 
-                        //TODO [CMP] not used
                         if(m_count == m_max_count)
                         {
-                            // split node and rotate
+                            // split node and rotate //TODO [CMP] not implemented
+                            throw std::out_of_range("Node is full, split not implemented");
                         }
-                        //else
+                        else
                         {
                             m_keys.insert(it_next_key, new_leaf_first_key);
                             m_leafs.insert(it_next_leafs, new_leaf);
@@ -128,6 +162,8 @@ void Node::insert(uint32_t _new_key, uint64_t _new_address)
                             new_leaf->insert(_new_key, _new_address);
                         }
 
+                        //TODO write node?
+
                         return;
                     }
                 }
@@ -136,50 +172,75 @@ void Node::insert(uint32_t _new_key, uint64_t _new_address)
             ++it_keys;
             ++it_leafs;
         }
-    }
+*/
+        // if code reach this point, insert new leaf at end
+        {
+            if(m_count == m_max_count)
+            {
+                // split node and rotate //TODO [CMP] not implemented
+                throw std::out_of_range("Node is full, split not implemented");
+            }
+            else
+            {
+                // link previous with new leaf
+                {
+                    // remember the file position
+                    std::streampos next_r_pos = m_fs_index.tellg();
+                    std::streampos next_w_pos = m_fs_index.tellp();
 
-    // if code reach this point, insert new leaf at end
-    Leaf * new_leaf = new Leaf(m_max_count, m_block_size);
-    new_leaf->insert(_new_key, _new_address);
+                    // go to last leaf read position
+                    m_fs_index.seekg(m_leaf_addresses[m_count - 1]);
+                    Leaf last_leaf(m_max_count, m_block_size);
+                    last_leaf.read(m_fs_index);
+                    last_leaf.setNextLeafAddress(next_w_pos);
 
-    //TODO [CMP] not used
-    if(m_count == m_max_count)
-    {
-        // split node and rotate
-    }
-    //else
-    {
-        m_keys.push_back(_new_key);
-        m_leafs.push_back(new_leaf);
-    }
+                    // go to last leaf write position
+                    m_fs_index.seekp(m_leaf_addresses[m_count - 1]);
+                    last_leaf.write(m_fs_index);
 
-    return;
+                    // restore original position
+                    m_fs_index.seekg(next_r_pos);
+                    m_fs_index.seekp(next_w_pos);
+                }
+
+                m_keys[m_count] = _new_key;
+                m_leaf_addresses[m_count] = m_fs_index.tellp();
+
+                Leaf * new_leaf = new Leaf(m_max_count, m_block_size);
+                new_leaf->insert(_new_key, _new_address);
+                new_leaf->write(m_fs_index);
+
+                ++m_count;
+            }
+        }
+
+        //TODO write node?
+
+        return;
+    }
 }
 
 std::string Node::toString()
 {
     std::stringstream ss;
 
-    ss << '\t' << "Node, leaf count: " << m_keys.size() << std::endl;
+    ss << '\t' << "Node, leaf count: " << m_count << std::endl;
 
-    std::list<uint32_t>::iterator it_keys = m_keys.begin();
-    std::list<Leaf *>::iterator it_leafs = m_leafs.begin();
+    std::streampos pos = m_fs_index.tellg(); // remember the file position
+    Leaf leaf(m_max_count, m_block_size);
 
-    uint32_t key;
-    Leaf * leaf;
-
-    while(it_keys != m_keys.end())
+    for(uint16_t i = 0; i < m_count; ++i)
     {
-        key = (*it_keys);
-        leaf = (*it_leafs);
+        m_fs_index.seekg(m_leaf_addresses[i]); // go to leaf position on the index file
+        leaf.read(m_fs_index);
 
         ss << '\t' << "------------------------------" << std::endl;
-        ss << '\t' << '\t' << "Leaf key: " << key << std::endl;
-        ss << leaf->toString();
-
-        ++it_keys;
-        ++it_leafs;
+        ss << '\t' << '\t' << "Leaf key: " << m_keys[i] << std::endl;
+        ss << '\t' << '\t' << "Leaf address: " << m_leaf_addresses[i] << std::endl;
+        ss << leaf.toString();
     }
+
+    m_fs_index.seekg(pos); // restore original position
 
     return ss.str();
 }

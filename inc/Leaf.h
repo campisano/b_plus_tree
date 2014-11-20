@@ -1,13 +1,13 @@
 #define __LEAF_H__
 
-#include <cstdio>
+#include <fstream>
 #include <stdint.h>
 #include <string>
 
 class Leaf
 {
 public:
-    explicit Leaf(uint16_t _max_count, uint16_t _block_size);
+    explicit Leaf(const uint16_t _max_count, const uint16_t _block_size);
     virtual ~Leaf();
 
     inline bool isEmpty() { return m_count == m_max_count; }
@@ -15,14 +15,14 @@ public:
     uint32_t split(Leaf* _new_leaf, uint64_t _new_leaf_address);
     void setNextLeafAddress(uint64_t _next_leaf_address);
 
-    void readLeaf(FILE * _input_file);
-    void writeLeaf(FILE * _output_file);
+    void read(std::fstream & _input_file);
+    void write(std::fstream & _output_file);
 
     std::string toString();
 
 private:
-    uint16_t m_max_count;
-    uint16_t m_block_size;
+    const uint16_t m_max_count;
+    const uint16_t m_block_size;
     uint16_t m_real_data_size;
 
     // data struct to write on disk

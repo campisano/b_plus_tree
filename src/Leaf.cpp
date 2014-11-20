@@ -3,11 +3,9 @@
 #include <sstream>
 #include <stdexcept>
 
-Leaf::Leaf(uint16_t _max_count, uint16_t _block_size)
+Leaf::Leaf(const uint16_t _max_count, const uint16_t _block_size) :
+    m_max_count(_max_count), m_block_size(_block_size)
 {
-    m_max_count = _max_count;
-    m_block_size = _block_size;
-
     m_count = 0;
     m_next_leaf_address = -1;
 
@@ -64,6 +62,7 @@ void Leaf::insert(uint32_t _key, uint64_t _address)
         }
         else if (m_keys[pos] > _key)
         {
+            // shift all elements to next pos
             for(uint16_t rpos = m_count; rpos > pos; --rpos)
             {
                 m_keys[rpos] = m_keys[rpos - 1];
@@ -114,24 +113,26 @@ void Leaf::setNextLeafAddress(uint64_t _next_leaf_address)
     m_next_leaf_address = _next_leaf_address;
 }
 
-void Leaf::readLeaf(FILE * _input_file)
+void Leaf::read(std::fstream & _input_file)
 {
-    fread(&m_count, sizeof(m_count), 1, _input_file);
-    fread(&m_keys, sizeof(m_keys[0]), m_max_count, _input_file);
-    fread(&m_addresses, sizeof(m_addresses[0]), m_max_count, _input_file);
-    fread(&m_next_leaf_address, sizeof(m_next_leaf_address), 1, _input_file);
+    _input_file.read((char *)(&m_count), sizeof(m_count));
+    _input_file.read((char *)(m_keys), sizeof(m_keys[0]) * m_max_count);
+    _input_file.read((char *)(m_addresses), sizeof(m_addresses[0]) * m_max_count);
+    _input_file.read((char *)(&m_next_leaf_address), sizeof(m_next_leaf_address));
 
-    fseek(_input_file, m_block_size - m_real_data_size, SEEK_CUR);
+    // skip free block space
+    _input_file.seekg(m_block_size - m_real_data_size, _input_file.cur);
 }
 
-void Leaf::writeLeaf(FILE * _output_file)
+void Leaf::write(std::fstream & _output_file)
 {
-    fwrite(&m_count, sizeof(m_count), 1, _output_file);
-    fwrite(&m_keys, sizeof(m_keys[0]), m_max_count, _output_file);
-    fwrite(&m_addresses, sizeof(m_addresses[0]), m_max_count, _output_file);
-    fwrite(&m_next_leaf_address, sizeof(m_next_leaf_address), 1, _output_file);
+    _output_file.write((char *)(&m_count), sizeof(m_count));
+    _output_file.write((char *)(m_keys), sizeof(m_keys[0]) * m_max_count);
+    _output_file.write((char *)(m_addresses), sizeof(m_addresses[0]) * m_max_count);
+    _output_file.write((char *)(&m_next_leaf_address), sizeof(m_next_leaf_address));
 
-    fseek(_output_file, m_block_size - m_real_data_size, SEEK_CUR);
+    // skip free block space
+    _output_file.seekg(m_block_size - m_real_data_size, _output_file.cur);
 }
 
 std::string Leaf::toString()

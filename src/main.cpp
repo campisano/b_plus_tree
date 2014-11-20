@@ -1,28 +1,49 @@
-#define CS 2    // COUNTER_SIZE
-#define KS 4    // KEY_SIZE
-#define PS 8    // POINTER_SIZE
-#define PX 8    // NEXT_POINTER_SIZE
+/*
+// 2 leafs pages structure:
+//                                       A node
+//
+//                               count  key   key  next
+//                               +--------------------+
+//                               |   |  10 |  80 |    |
+//                               | 2 |-----+-----| pnt|
+//                               |   | pnt | pnt |    |
+//                               +--------------------+
+//                                     /     /      \
+//             _______________________/     /        \_____NOT USED_____
+//            /                            /             IN THIS CODE   \
+//         Leaf 1                        Leaf 2                        ----
+//
+// count  key   key  next        count  key   key  next        count  key   key  next
+// +--------------------+        +--------------------+        +--------------------+
+// |   |  01 |  09 |    |        |   |  10 | ... |    |        |   | ... | ... |    |
+// | 2 |-----+-----| pnt|---->---| 1 |-----+-----|NULL|        | . |-----+-----| ...|
+// |   | pnt | pnt |    |        |   | pnt | ... |    |        |   | ... | ... |    |
+// +--------------------+        +--------------------+        +--------------------+
+//         \      \_______________      |
+//          \____________________ \      \
+//                               \ \      |
+//                               +--------------------+
+//                               | real data archive  |
+//                               +--------------------+
+*/
+
+#define CS 2    // uint16_t COUNTER_SIZE
+#define KS 4    // uint32_t KEY_SIZE
+#define PS 8    // uint64_t POINTER_SIZE
+#define PX 8    // uint64_t NEXT_POINTER_SIZE
 
 //#define NK 340  // NUM_OF_KEY_PER_LEAF
-//total: (4 + 8) * 340 + 2 + 8 = 4090
-//#define BS 4096 // BLOCK_SIZE
-
-//#define tmp_num_ceps 600000
-
+//total
+//#define BS 4096 // BLOCK_SIZE: 2 + (4 + 8) * 340 + 8 = 4090
 
 #define NK 4  // NUM_OF_KEY_PER_LEAF
-//uint16_t m_count; // 2
-//uint32_t * m_keys; // 4
-//uint64_t * m_addresses; // 8
-//uint64_t m_next_leaf_address; // 8
-//total: 2 + (4 + 8) * NK + 8 = 58
-
-#define BS 60 // BLOCK_SIZE
+#define BS 60 // BLOCK_SIZE: 2 + (4 + 8) * NK + 8 = 58
 
 #define tmp_num_ceps 23
 
 #include <algorithm>
 #include <cstdlib>
+#include <fstream>
 #include <iostream>
 #include <list>
 #include <stdint.h>
@@ -34,6 +55,7 @@ int main(int _n_args, char ** _v_args)
     // random unique insertions
     std::list<uint32_t> lst_unique_keys;
 
+    /*
     uint32_t key;
 
     while(lst_unique_keys.size() < tmp_num_ceps)
@@ -45,19 +67,40 @@ int main(int _n_args, char ** _v_args)
             lst_unique_keys.push_back(key);
         }
     }
+    */
 
-    Node root(NK, BS);
+    lst_unique_keys.push_back(15);
+    lst_unique_keys.push_back(24);
+    lst_unique_keys.push_back(32);
+    lst_unique_keys.push_back(61);
+
+    std::fstream fs_index ("index.dat", std::fstream::in | std::fstream::out | std::fstream::binary | std::fstream::trunc);
+
+    if(!fs_index)
+    {
+        std::cerr << "Can't open file" << std::endl;
+
+        return 1;
+    }
+
+    Node root(fs_index, NK, BS);
+    std::cout << "keys per leaf: " << NK << ", block size: " << BS << std::endl << std::endl;
 
     std::list<uint32_t>::iterator it;
 
     for(it = lst_unique_keys.begin(); it != lst_unique_keys.end(); ++it)
     {
-        std::cout << "********** insert: " << (*it) << " **********" << std::endl;
+        std::cout << "********** insert: " << (*it) << ", " << 100 - (*it) <<  " **********" << std::endl;
         root.insert((*it), 100 - (*it));
         std::cout << root.toString() << std::endl;
     }
 
+    std::cout << std::endl << "=== result: ===" << std::endl;
+    std::cout << root.toString() << std::endl << std::endl;
+
     std::cout << "done." << std::endl;
+
+    fs_index.close();
 
     return 0;
 }
