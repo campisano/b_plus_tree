@@ -1,0 +1,76 @@
+página árvore b+
+precisa descer até a folha para obter o ponteiro ao arquivo de dado
+
+obs em uma página do meio da árevore B+ cabem mais chaves do que a da B pois não tem o ponteiro ao disco
+
+
+na inserção em folha cheia, se cria uma folha na direita translando a metade-1 dos elementos da esquerda para direita, e colocando o novo elemento na direita
+precisa também atualizar os ponteiros aos nós irmãos, da nova folha para a direita da antiga e da folha esquerda para a nova folha
+
+antes: old1  ---> old2 --> X
+depois: old1 ---> new3 ---> old2 --> X
+
+
+
+Páginas Folhas:
+
+|num|10 |20 |   |        |   |key |...|    |
+| 2 |__ |__ |pnt|   ->   | 2 |___ |__ |NULL|
+|ele|pnt|pnt|   |        |   |pnt |...|    |
+      |   |                    |
+       \___\_____       ______/
+                 \     /
+             arquivo de dados
+
+
+
+exemplo, arquivo CEP
+qual vai ser o tamanho da página?
+qual a altura da árvore?
+
+
+estimativa em bytes do tamanho do arquivo de index
+
+1) tamanho da chave CEP
+Tc = int 4 bytes
+
+2) tamanho contador do número de itens do registro
+Tqt = short int 2 byres
+
+3) tamanho ponteiro do disco
+Tp = long int 8 bytes
+
+4) tamanho do bloco
+Tb = 4096 bytes
+
+número de elementos?
+N = ?
+Tqt + N * Tc + (N + 1) * Tp < Tb
+2   + N * 4  + (N + 1) * 8  < 4096
+12 N < 4096 - 2 - 8
+N < 4086 / 12
+N < 340
+
+
+n folhas necessária para armazenar as chaves de ceps = 600000 CEPS /  = 1765
+
+nível folhas = 1765 páginas
+
+folha - 1 = 1765 / (340 + 1) = 5.17... = 6
+folha - 2 = 6 / (340 + 1) = 0. = 1
+
+altura da árvore = 3 níveis
+
+estimar o tamanho em bytes da árvore
+tamanho optimal é (1765 + 6 + 1) * 4096
+considerar que a árvore no minimo é cheia por metade
+no caso pior teria o dubro de chaves de base
+considerar que na inserção terá poucos buracos abertos na árvore
+considerar que folha tem
+
+
+
+
+
+
+

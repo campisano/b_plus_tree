@@ -1,0 +1,76 @@
+= Árvore B 2014/10/22 =
+
+* apresentada pela primeria vez por Bayer em um artigo do '72
+* estrutura padrão para index em banco de dados, junto ao hash
+
+* árvore com aridade N (cada nó com N filhos)
+
+
+
+== ex árvore aridade = 5, item por nó = 4, sempre que tiver n itens por nòs teremos n+1 ponteiros ==
+
+
+
+                         |x|127|x|2001|x|00|x|00|x|
+                         /       \
+                        /         \_______________________________________
+                       /                                                  \
+                      /                                                    \
+                     /                                                      \
+             |x|45|x|85|x|125|x|00|x|                                       |x|175|x|00|x|00|x|2000|x|
+             /      \    \                                                    \
+            /        \___ \________________________                            \
+           /             \                         \                            \
+          /               \                         \                            \
+|x|10|x|20|x|30|x|40|x|   |x|50|x|60|x|70|x|80|x|   |x|90|x|100|x|110|x|120|x|   |x|130|x|140|x|150|x|160|x|
+
+
+
+OBS: na inserção, a ordem de itens em cada nó é mantida
+     ao completar o nó, a àrvore cresce para cima, criando o nó pai e definindo ele como raiz
+     split: a metade dos elementos vai na 'página' nova na esquerda
+     redistribuição
+     em todos os nós não raiz, a lei de formação da inserção obriga a ter cada nó com ocupação mínima de 50%
+     isso vira regra na remoção, o Bayer definiu que não pode ter nòs com menos do 50% da ocupação
+     cada nó tem um espaço vazío amais na memória como buffer de inserção, útil no algoritmo de inserção mas não salvo no disco
+
+inserção
+1) chegar na folha onde o valor seria inserido (folha = nó com primeiro pontero nulo)
+
+
+
+== ex página de 4kb ==
+
+1) quantos itens cabem em cada nò?
+
+tamanho do counter de item do nó, geralmente unsigned short int de 2 bytes;
+tamanho do item do nó = tamanho da chave de busca + tamanho ponteiro para o arquivo de dado não indexado;
+tamanho do ponteiro antes e depois do item do nò;
+
+
+
+ex 4 item: short int + 5* tam ponteiro index + 4 vezes tamanho do item
+
+=== estrutura ===
+
+          0     1   ..   n-1
+N^      | C1 | C2 | .. | CN | valores 0..n-1 | ponteiros 0..n
+chaves
+
+short     i    i                 integer         integer
+          n    n
+          t    t
+
+=== conta ===
+
+2 + 4*n + 4*n + 4*(n+1) == 4096 =>
+12n == 4090
+n == 4090 / 12 = 340
+
+
+=== altura da árvore ===
+
+níveis        registros
+1             170   (50% de 340)
+2             2 ponteiros * 170
+3             2 * 171 ponteiros * 170
