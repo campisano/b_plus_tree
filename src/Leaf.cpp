@@ -1,16 +1,48 @@
 #include "Leaf.h"
 
+#include <sstream>
 #include <stdexcept>
+//#include <iostream>
 
-
-Leaf::Leaf(unsigned short int _size)
+Leaf::Leaf(unsigned short int _size, unsigned short int _block_size)
 {
-    m_count = 0;
     m_size = _size;
-    m_next = NULL;
+    m_block_size = _block_size;
 
-    m_keys = new long int[m_size];
+    short int real_size =
+        sizeof(m_count) +
+        m_size * sizeof(m_keys[0]) +
+        m_size * sizeof(m_pointers[0]) +
+        sizeof(m_next);
+
+    m_free_size = m_block_size - real_size;
+
+    if(m_free_size < 0)
+    {
+        throw std::invalid_argument("Block size is less then real leaf size");
+    }
+
+    m_count = 0;
+    m_next = -1;
+
+    m_keys = new unsigned long int[m_size];
     m_pointers = new unsigned long long int[m_size];
+
+/*
+    std::cout << "m_count: " << sizeof(m_count) << std::endl;
+    std::cout << "unsigned short int: " << sizeof(unsigned short int) << std::endl;
+    std::cout << "m_keys[0]: " << sizeof(m_keys[0]) << std::endl;
+    std::cout << "unsigned long int: " << sizeof(unsigned long int) << std::endl;
+    std::cout << "m_pointers[0]: " << sizeof(m_pointers[0]) << std::endl;
+    std::cout << "unsigned long long int: " << sizeof(unsigned long long int) << std::endl;
+    std::cout << "m_next: " << sizeof(m_next) << std::endl;
+    std::cout << "unsigned long long int: " << sizeof(unsigned long long int) << std::endl;
+
+    std::cout << "total: " << sizeof(m_count) +
+        m_size * sizeof(m_keys[0]) +
+        m_size * sizeof(m_pointers[0]) +
+        sizeof(m_next) << std::endl;
+*/
 }
 
 Leaf::~Leaf()
@@ -18,16 +50,11 @@ Leaf::~Leaf()
     delete m_pointers;
     delete m_keys;
 
-    if(m_next != NULL)
-    {
-        delete m_next;
-        m_next = NULL;
-    }
-
+    m_next = -1;
     m_count = 0;
 }
 
-void Leaf::insert(long int _key, unsigned long long int _pointer)
+void Leaf::insert(unsigned long int _key, unsigned long long int _pointer)
 {
     if(isEmpty())
     {
@@ -57,4 +84,64 @@ void Leaf::insert(long int _key, unsigned long long int _pointer)
     m_keys[pos] = _key;
     m_pointers[pos] = _pointer;
     ++m_count;
+}
+
+void Leaf::split(Leaf* _leaf)
+{
+    if(m_count != m_size)
+    {
+        throw std::invalid_argument("Input leaf must be full");
+    }
+
+    if(_leaf->m_count != 0)
+    {
+        throw std::invalid_argument("Output leaf must be empty");
+    }
+                                               // ex 7 = 13 / 2 + 1
+    unsigned short int half = m_count / 2 + 1; // ex 5 = 9 / 2 + 1
+
+    for(unsigned short int i = half; i < m_count; ++i)
+    {
+        _leaf->m_keys[i - half] = m_keys[i];
+        _leaf->m_pointers[i - half] = m_pointers[i];
+    }
+                                     // ex 6 = 13 - 7
+    _leaf->m_count = m_count - half; // ex 4 = 9 - 5
+    m_count = half; // ex 7 // ex 5
+}
+
+void Leaf::readLeaf(FILE * _input_file)
+{
+    fread(&m_count, sizeof(m_count), 1, _input_file);
+    fread(&m_keys, sizeof(m_keys[0]), m_size, _input_file);
+    fread(&m_pointers, sizeof(m_pointers[0]), m_size, _input_file);
+    fread(&m_next, sizeof(m_next), 1, _input_file);
+
+    fseek(_input_file, m_free_size, SEEK_CUR);
+}
+
+void Leaf::writeLeaf(FILE * _output_file)
+{
+    fwrite(&m_count, sizeof(m_count), 1, _output_file);
+    fwrite(&m_keys, sizeof(m_keys[0]), m_size, _output_file);
+    fwrite(&m_pointers, sizeof(m_pointers[0]), m_size, _output_file);
+    fwrite(&m_next, sizeof(m_next), 1, _output_file);
+
+    fseek(_output_file, m_free_size, SEEK_CUR);
+}
+
+std::string Leaf::toString()
+{
+    std::stringstream ss;
+
+    ss << "count: " << m_count << std::endl;
+
+    for(unsigned short pos = 0; pos < m_count; ++pos)
+    {
+        ss << "key: " << m_keys[pos] << " pointer: " << m_pointers[pos] << std::endl;
+    }
+
+    ss << "next_pointer: " << m_next << std::endl;
+
+    return ss.str();
 }
