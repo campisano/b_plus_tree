@@ -72,12 +72,13 @@ void Leaf::insert(unsigned long int _key, unsigned long long int _pointer)
         }
         else if (m_keys[pos] > _key)
         {
-            throw std::runtime_error("Unordered insertion not implemented");
-            //shift all remainig left items
-            // ex:
-            // m_keys[pos + 1] = m_keys[pos];
-            // m_pointers[pos + 1] = m_pointers[pos];
-            // break;
+            for(int rpos = m_count; rpos > pos; --rpos)
+            {
+                m_keys[rpos] = m_keys[rpos - 1];
+                m_pointers[rpos] = m_pointers[rpos - 1];
+            }
+
+            break;
         }
     }
 
@@ -86,7 +87,7 @@ void Leaf::insert(unsigned long int _key, unsigned long long int _pointer)
     ++m_count;
 }
 
-void Leaf::split(Leaf* _new_leaf, unsigned long long int _new_leaf_pointer)
+unsigned long int Leaf::split(Leaf* _new_leaf, unsigned long long int _new_leaf_pointer)
 {
     if(m_count != m_size)
     {
@@ -110,7 +111,12 @@ void Leaf::split(Leaf* _new_leaf, unsigned long long int _new_leaf_pointer)
     m_count = half; // ex 7 // ex 5
 
     _new_leaf->m_next_leaf_pointer = m_next_leaf_pointer;
-    m_next_leaf_pointer = _new_leaf_pointer;
+
+    //TODO [CMP] temporaneamente o ponteiro à próxima folha é a chave dela
+    m_next_leaf_pointer = _new_leaf->m_keys[0];
+
+    // return new leaf first key
+    return _new_leaf->m_keys[0];
 }
 
 void Leaf::setNextLeafPointer(unsigned long long int _next_leaf_pointer)

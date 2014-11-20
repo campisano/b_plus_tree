@@ -14,27 +14,44 @@
 //total: (4 + 8) * 4 + 2 + 8 = 58
 #define BS 60 // BLOCK_SIZE
 
-#define tmp_num_ceps 15
+#define tmp_num_ceps 23
 
+#include <algorithm>
+#include <cstdlib>
 #include <iostream>
 #include <list>
+
 #include "Node.h"
 
 int main(int _n_args, char ** _v_args)
 {
-    std::list<long int> lst_keys;
+    //TODO [CMP] bug!
+    // em caso de split, o novo leaf é adicionado no topo, mas node está achando que os leaf embaixo deles estão ordenados.
+    // na verdade no disco essa varridura deve ser ordenada
 
-    for(int i = 0; i < tmp_num_ceps; ++i)
+    // random unique insertions
+    std::list<unsigned long int> lst_unique_keys;
+
+    unsigned long int key;
+
+    while(lst_unique_keys.size() < tmp_num_ceps)
     {
-        lst_keys.push_back(i);
+        key =  rand() % 100;
+
+        if(std::find(lst_unique_keys.begin(), lst_unique_keys.end(), key) == lst_unique_keys.end())
+        {
+            lst_unique_keys.push_back(key);
+        }
     }
 
     Node root(NK, BS);
 
-    for(int i = 0; i < tmp_num_ceps; ++i)
+    std::list<unsigned long int>::iterator it;
+
+    for(it = lst_unique_keys.begin(); it != lst_unique_keys.end(); ++it)
     {
-        root.insert(i, i);
-        std::cout << "********** insert: " << i << " **********" << std::endl;
+        std::cout << "********** insert: " << (*it) << " **********" << std::endl;
+        root.insert((*it), 100 - (*it));
         std::cout << root.toString() << std::endl;
     }
 

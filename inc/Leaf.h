@@ -11,7 +11,7 @@ public:
 
     inline bool isEmpty() { return m_count == m_size; }
     void insert(unsigned long int _key, unsigned long long int _pointer);
-    void split(Leaf* _new_leaf, unsigned long long int _new_leaf_pointer);
+    unsigned long int split(Leaf* _new_leaf, unsigned long long int _new_leaf_pointer);
     void setNextLeafPointer(unsigned long long int _next_leaf_pointer);
 
     void readLeaf(FILE * _input_file);

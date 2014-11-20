@@ -40,7 +40,8 @@ Leaf * Node::insert(unsigned long int _key, unsigned long long int _pointer)
         {
             // insert new leaf at start, configuring next leaf as current
             Leaf * new_leaf = new Leaf(m_size, m_block_size);
-            new_leaf->setNextLeafPointer((unsigned long long int) (*it_leafs));
+            // TODO [CMP] leaf pointer to emulate disk reference is the (*it_keys), temporary
+            new_leaf->setNextLeafPointer((*it_keys));
             new_leaf->insert(_key, _pointer);
 
             m_keys.push_front(_key);
@@ -52,6 +53,7 @@ Leaf * Node::insert(unsigned long int _key, unsigned long long int _pointer)
         unsigned long int key;
         Leaf * leaf;
         std::list<unsigned long int>::iterator it_next_key;
+        std::list<Leaf *>::iterator it_next_leafs;
 
         // find the correct leaf
         while(it_keys != m_keys.end())
@@ -64,6 +66,8 @@ Leaf * Node::insert(unsigned long int _key, unsigned long long int _pointer)
             {
                 it_next_key = it_keys;
                 ++it_next_key;
+                it_next_leafs = it_leafs;
+                ++it_next_leafs;
 
                 // if is equal
                 if((key == _key) ||
@@ -84,12 +88,12 @@ Leaf * Node::insert(unsigned long int _key, unsigned long long int _pointer)
                     {
                         Leaf * new_leaf = new Leaf(m_size, m_block_size);
 
-                        // TODO [CMP] leaf pointer to emulate disk reference is the memory leaf pointer, temporary
-                        leaf->split(new_leaf, (unsigned long long int) new_leaf);
+                        // TODO [CMP] leaf pointer to emulate disk reference is the _key, temporary
+                        unsigned long int new_leaf_key = leaf->split(new_leaf, _key);
                         new_leaf->insert(_key, _pointer);
 
-                        m_keys.push_back(_key);
-                        m_leafs.push_back(new_leaf);
+                        m_keys.insert(it_next_key, new_leaf_key);
+                        m_leafs.insert(it_next_leafs, new_leaf);
 
                         return new_leaf;
                     }
