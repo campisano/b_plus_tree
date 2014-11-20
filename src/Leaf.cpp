@@ -3,29 +3,38 @@
 #include <sstream>
 #include <stdexcept>
 
-Leaf::Leaf(unsigned short int _size, unsigned short int _block_size)
+Leaf::Leaf(uint16_t _max_count, uint16_t _block_size)
 {
-    m_size = _size;
+    m_max_count = _max_count;
     m_block_size = _block_size;
-
-    short int real_size =
-        sizeof(m_count) +
-        m_size * sizeof(m_keys[0]) +
-        m_size * sizeof(m_addresses[0]) +
-        sizeof(m_next_leaf_address);
-
-    m_free_size = m_block_size - real_size;
-
-    if(m_free_size < 0)
-    {
-        throw std::invalid_argument("Block size is less then real leaf size");
-    }
 
     m_count = 0;
     m_next_leaf_address = -1;
 
-    m_keys = new unsigned long int[m_size];
-    m_addresses = new unsigned long long int[m_size];
+    m_keys = new uint32_t[m_max_count];
+    m_addresses = new uint64_t[m_max_count];
+
+    m_real_data_size =
+        sizeof(m_count) +
+        m_max_count * sizeof(m_keys[0]) +
+        m_max_count * sizeof(m_addresses[0]) +
+        sizeof(m_next_leaf_address);
+
+    if(m_block_size < m_real_data_size)
+    {
+        std::stringstream ss;
+        ss << "Block size is less then real leaf size:" << std::endl;
+        ss << "Block defined size = " << m_block_size << std::endl;
+        ss << "m_max_count = " << m_max_count << std::endl;
+        ss << "sizeof(m_count): " << sizeof(m_count) << std::endl;
+        ss << "sizeof(m_keys[0]): " << sizeof(m_keys[0]) << std::endl;
+        ss << "sizeof(m_addresses[0]): " << sizeof(m_addresses[0]) << std::endl;
+        ss << "m_max_count * (m_keys[0] size + m_addresses[0] size): " << m_max_count * (sizeof(m_keys[0]) + sizeof(m_addresses[0])) << std::endl;
+        ss << "sizeof(m_next_leaf_address): " << sizeof(m_next_leaf_address) << std::endl;
+        ss << "Total real leaf size = " << m_real_data_size << std::endl;
+
+        throw std::invalid_argument(ss.str());
+    }
 }
 
 Leaf::~Leaf()
@@ -37,7 +46,7 @@ Leaf::~Leaf()
     m_next_leaf_address = -1;
 }
 
-void Leaf::insert(unsigned long int _key, unsigned long long int _address)
+void Leaf::insert(uint32_t _key, uint64_t _address)
 {
     if(isEmpty())
     {
@@ -55,7 +64,7 @@ void Leaf::insert(unsigned long int _key, unsigned long long int _address)
         }
         else if (m_keys[pos] > _key)
         {
-            for(int rpos = m_count; rpos > pos; --rpos)
+            for(uint16_t rpos = m_count; rpos > pos; --rpos)
             {
                 m_keys[rpos] = m_keys[rpos - 1];
                 m_addresses[rpos] = m_addresses[rpos - 1];
@@ -70,9 +79,9 @@ void Leaf::insert(unsigned long int _key, unsigned long long int _address)
     ++m_count;
 }
 
-unsigned long int Leaf::split(Leaf* _new_leaf, unsigned long long int _new_leaf_address)
+uint32_t Leaf::split(Leaf* _new_leaf, uint64_t _new_leaf_address)
 {
-    if(m_count != m_size)
+    if(m_count != m_max_count)
     {
         throw std::invalid_argument("Input leaf must be full");
     }
@@ -82,9 +91,9 @@ unsigned long int Leaf::split(Leaf* _new_leaf, unsigned long long int _new_leaf_
         throw std::invalid_argument("Output leaf must be empty");
     }
                                             // ex 4 = 8 / 2
-    unsigned short int half = m_count / 2;  // ex 6 = 13 / 2
+    uint16_t half = m_count / 2;  // ex 6 = 13 / 2
 
-    for(unsigned short int i = half; i < m_count; ++i)
+    for(uint16_t i = half; i < m_count; ++i)
     {
         _new_leaf->m_keys[i - half] = m_keys[i];
         _new_leaf->m_addresses[i - half] = m_addresses[i];
@@ -100,7 +109,7 @@ unsigned long int Leaf::split(Leaf* _new_leaf, unsigned long long int _new_leaf_
     return _new_leaf->m_keys[0];
 }
 
-void Leaf::setNextLeafAddress(unsigned long long int _next_leaf_address)
+void Leaf::setNextLeafAddress(uint64_t _next_leaf_address)
 {
     m_next_leaf_address = _next_leaf_address;
 }
@@ -108,21 +117,21 @@ void Leaf::setNextLeafAddress(unsigned long long int _next_leaf_address)
 void Leaf::readLeaf(FILE * _input_file)
 {
     fread(&m_count, sizeof(m_count), 1, _input_file);
-    fread(&m_keys, sizeof(m_keys[0]), m_size, _input_file);
-    fread(&m_addresses, sizeof(m_addresses[0]), m_size, _input_file);
+    fread(&m_keys, sizeof(m_keys[0]), m_max_count, _input_file);
+    fread(&m_addresses, sizeof(m_addresses[0]), m_max_count, _input_file);
     fread(&m_next_leaf_address, sizeof(m_next_leaf_address), 1, _input_file);
 
-    fseek(_input_file, m_free_size, SEEK_CUR);
+    fseek(_input_file, m_block_size - m_real_data_size, SEEK_CUR);
 }
 
 void Leaf::writeLeaf(FILE * _output_file)
 {
     fwrite(&m_count, sizeof(m_count), 1, _output_file);
-    fwrite(&m_keys, sizeof(m_keys[0]), m_size, _output_file);
-    fwrite(&m_addresses, sizeof(m_addresses[0]), m_size, _output_file);
+    fwrite(&m_keys, sizeof(m_keys[0]), m_max_count, _output_file);
+    fwrite(&m_addresses, sizeof(m_addresses[0]), m_max_count, _output_file);
     fwrite(&m_next_leaf_address, sizeof(m_next_leaf_address), 1, _output_file);
 
-    fseek(_output_file, m_free_size, SEEK_CUR);
+    fseek(_output_file, m_block_size - m_real_data_size, SEEK_CUR);
 }
 
 std::string Leaf::toString()
@@ -131,7 +140,7 @@ std::string Leaf::toString()
 
     ss << '\t' << '\t' << "count: " << m_count << std::endl;
 
-    for(unsigned short pos = 0; pos < m_count; ++pos)
+    for(uint16_t pos = 0; pos < m_count; ++pos)
     {
         ss << '\t' << '\t' << '\t' << "key: " << m_keys[pos] << " address: " << m_addresses[pos] << std::endl;
     }

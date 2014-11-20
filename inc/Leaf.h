@@ -1,18 +1,19 @@
 #define __LEAF_H__
 
 #include <cstdio>
+#include <stdint.h>
 #include <string>
 
 class Leaf
 {
 public:
-    explicit Leaf(unsigned short int _size, unsigned short int _block_size);
+    explicit Leaf(uint16_t _max_count, uint16_t _block_size);
     virtual ~Leaf();
 
-    inline bool isEmpty() { return m_count == m_size; }
-    void insert(unsigned long int _key, unsigned long long int _address);
-    unsigned long int split(Leaf* _new_leaf, unsigned long long int _new_leaf_address);
-    void setNextLeafAddress(unsigned long long int _next_leaf_address);
+    inline bool isEmpty() { return m_count == m_max_count; }
+    void insert(uint32_t _key, uint64_t _address);
+    uint32_t split(Leaf* _new_leaf, uint64_t _new_leaf_address);
+    void setNextLeafAddress(uint64_t _next_leaf_address);
 
     void readLeaf(FILE * _input_file);
     void writeLeaf(FILE * _output_file);
@@ -20,13 +21,13 @@ public:
     std::string toString();
 
 private:
-    unsigned short int m_size;
-    unsigned short int m_block_size;
-    unsigned short int m_free_size;
+    uint16_t m_max_count;
+    uint16_t m_block_size;
+    uint16_t m_real_data_size;
 
     // data struct to write on disk
-    unsigned short int m_count;
-    unsigned long int * m_keys;
-    unsigned long long int * m_addresses;
-    unsigned long long int m_next_leaf_address;
+    uint16_t m_count;
+    uint32_t * m_keys;
+    uint64_t * m_addresses;
+    uint64_t m_next_leaf_address;
 };

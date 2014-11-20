@@ -11,7 +11,12 @@
 
 
 #define NK 4  // NUM_OF_KEY_PER_LEAF
-//total: (4 + 8) * 4 + 2 + 8 = 58
+//uint16_t m_count; // 2
+//uint32_t * m_keys; // 4
+//uint64_t * m_addresses; // 8
+//uint64_t m_next_leaf_address; // 8
+//total: 2 + (4 + 8) * NK + 8 = 58
+
 #define BS 60 // BLOCK_SIZE
 
 #define tmp_num_ceps 23
@@ -20,15 +25,16 @@
 #include <cstdlib>
 #include <iostream>
 #include <list>
+#include <stdint.h>
 
 #include "Node.h"
 
 int main(int _n_args, char ** _v_args)
 {
     // random unique insertions
-    std::list<unsigned long int> lst_unique_keys;
+    std::list<uint32_t> lst_unique_keys;
 
-    unsigned long int key;
+    uint32_t key;
 
     while(lst_unique_keys.size() < tmp_num_ceps)
     {
@@ -42,7 +48,7 @@ int main(int _n_args, char ** _v_args)
 
     Node root(NK, BS);
 
-    std::list<unsigned long int>::iterator it;
+    std::list<uint32_t>::iterator it;
 
     for(it = lst_unique_keys.begin(); it != lst_unique_keys.end(); ++it)
     {
