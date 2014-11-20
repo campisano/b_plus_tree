@@ -28,12 +28,30 @@ Node::~Node()
 
 Leaf * Node::insert(unsigned long int _key, unsigned long long int _pointer)
 {
+    // if there are subnodes
+    if(m_keys.size() > 0)
     {
         std::list<unsigned long int>::iterator it_keys = m_keys.begin();
         std::list<Leaf *>::iterator it_leafs = m_leafs.begin();
 
+        //TODO [CMP] test!!!
+        // if first key is greather then new key
+        if((*it_keys) > _key)
+        {
+            // insert new leaf at start, configuring next leaf as current
+            Leaf * new_leaf = new Leaf(m_size, m_block_size);
+            new_leaf->setNextLeafPointer((unsigned long long int) (*it_leafs));
+            new_leaf->insert(_key, _pointer);
+
+            m_keys.push_front(_key);
+            m_leafs.push_front(new_leaf);
+
+            return new_leaf;
+        }
+
         unsigned long int key;
         Leaf * leaf;
+        std::list<unsigned long int>::iterator it_next_key;
 
         // find the correct leaf
         while(it_keys != m_keys.end())
@@ -41,24 +59,40 @@ Leaf * Node::insert(unsigned long int _key, unsigned long long int _pointer)
             key = (*it_keys);
             leaf = (*it_leafs);
 
-            if(key < _key)
+            // node key must be less or equal then next sub node (or leaf) key
+            if(key <= _key)
             {
-                if(!leaf->isEmpty())
+                it_next_key = it_keys;
+                ++it_next_key;
+
+                // if is equal
+                if((key == _key) ||
+                   // or there is no next key
+                   (it_next_key == m_keys.end()) ||
+                   // or next key is greather then new key
+                   (*it_next_key) > _key)
                 {
-                    leaf->insert(_key, _pointer);
+                    // then insert if not empty
+                    if(!leaf->isEmpty())
+                    {
+                        leaf->insert(_key, _pointer);
 
-                    return leaf;
-                }
-                else
-                {
-                    Leaf * new_leaf = new Leaf(m_size, m_block_size);
-                    leaf->split(new_leaf);
-                    new_leaf->insert(_key, _pointer);
+                        return leaf;
+                    }
+                    // else split and insert
+                    else
+                    {
+                        Leaf * new_leaf = new Leaf(m_size, m_block_size);
 
-                    m_keys.push_back(_key);
-                    m_leafs.push_back(new_leaf);
+                        // TODO [CMP] leaf pointer to emulate disk reference is the memory leaf pointer, temporary
+                        leaf->split(new_leaf, (unsigned long long int) new_leaf);
+                        new_leaf->insert(_key, _pointer);
 
-                    return new_leaf;
+                        m_keys.push_back(_key);
+                        m_leafs.push_back(new_leaf);
+
+                        return new_leaf;
+                    }
                 }
             }
 
@@ -81,7 +115,7 @@ std::string Node::toString()
 {
     std::stringstream ss;
 
-    ss << "Node, leaf count: " << m_keys.size() << std::endl << std::endl;
+    ss << '\t' << "Node, leaf count: " << m_keys.size() << std::endl;
 
     std::list<unsigned long int>::iterator it_keys = m_keys.begin();
     std::list<Leaf *>::iterator it_leafs = m_leafs.begin();
@@ -94,8 +128,8 @@ std::string Node::toString()
         key = (*it_keys);
         leaf = (*it_leafs);
 
-        ss << "__________________________________________________" << std::endl;
-        ss << "Leaf key: " << key << std::endl;
+        ss << '\t' << "------------------------------" << std::endl;
+        ss << '\t' << '\t' << "Leaf key: " << key << std::endl;
         ss << leaf->toString();
 
         ++it_keys;

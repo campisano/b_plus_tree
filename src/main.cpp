@@ -34,8 +34,8 @@ int main(int _n_args, char ** _v_args)
     for(int i = 0; i < tmp_num_ceps; ++i)
     {
         root.insert(i, i);
-        std::cout << "||||||||||| insert: " << i << " |||||||||||||||" << std::endl;
-        std::cout << root.toString() << std::endl << std::endl;
+        std::cout << "********** insert: " << i << " **********" << std::endl;
+        std::cout << root.toString() << std::endl;
     }
 
     std::cout << "done." << std::endl;
