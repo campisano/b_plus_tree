@@ -51,9 +51,9 @@ void Leaf::insert(uint32_t _key, uint64_t _address)
         throw std::out_of_range("Leaf is full");
     }
 
-    unsigned short pos;
+    uint16_t pos;
 
-    //find the position to insert
+    // find the position to insert
     for(pos = 0; pos < m_count; ++pos)
     {
         if(m_keys[pos] == _key)
@@ -78,34 +78,33 @@ void Leaf::insert(uint32_t _key, uint64_t _address)
     ++m_count;
 }
 
-uint32_t Leaf::split(Leaf* _new_leaf, uint64_t _new_leaf_address)
+uint32_t Leaf::split(Leaf & _new_leaf)
 {
     if(m_count != m_max_count)
     {
         throw std::invalid_argument("Input leaf must be full");
     }
 
-    if(_new_leaf->m_count != 0)
+    if(_new_leaf.m_count != 0)
     {
         throw std::invalid_argument("Output leaf must be empty");
     }
-                                            // ex 4 = 8 / 2
+                                  // ex 4 = 8 / 2
     uint16_t half = m_count / 2;  // ex 6 = 13 / 2
 
     for(uint16_t i = half; i < m_count; ++i)
     {
-        _new_leaf->m_keys[i - half] = m_keys[i];
-        _new_leaf->m_addresses[i - half] = m_addresses[i];
+        _new_leaf.m_keys[i - half] = m_keys[i];
+        _new_leaf.m_addresses[i - half] = m_addresses[i];
     }
-                                            // ex 4 = 8 - 4
-    _new_leaf->m_count = m_count - half;    // ex 7 = 13 - 6
+                                           // ex 4 = 8 - 4
+    _new_leaf.m_count = m_count - half;    // ex 7 = 13 - 6
     m_count = half; // ex 7 // ex 5
 
-    _new_leaf->m_next_leaf_address = m_next_leaf_address;
-    m_next_leaf_address = _new_leaf_address;
+    _new_leaf.m_next_leaf_address = m_next_leaf_address;
 
     // return new leaf first key
-    return _new_leaf->m_keys[0];
+    return _new_leaf.m_keys[0];
 }
 
 void Leaf::setNextLeafAddress(uint64_t _next_leaf_address)
@@ -124,7 +123,7 @@ void Leaf::read(std::fstream & _input_file)
     _input_file.seekg(m_block_size - m_real_data_size, _input_file.cur);
 }
 
-void Leaf::write(std::fstream & _output_file)
+void Leaf::append(std::fstream & _output_file)
 {
     _output_file.write((char *)(&m_count), sizeof(m_count));
     _output_file.write((char *)(m_keys), sizeof(m_keys[0]) * m_max_count);
@@ -133,6 +132,17 @@ void Leaf::write(std::fstream & _output_file)
 
     // skip free block space
     _output_file.seekg(m_block_size - m_real_data_size, _output_file.cur);
+}
+
+void Leaf::update(std::fstream & _output_file, std::streampos _position)
+{
+    // remember the write file position
+    std::streampos w_pos = _output_file.tellp();
+     // go to asked write position
+    _output_file.seekp(_position);
+    append(_output_file);
+    // restore original write position
+    _output_file.seekp(w_pos);
 }
 
 std::string Leaf::toString()

@@ -11,11 +11,11 @@
 //                                     /     /      \
 //             _______________________/     /        \_____NOT USED_____
 //            /                            /             IN THIS CODE   \
-//         Leaf 1                        Leaf 2                        ----
+//         Leaf 1                        Leaf 2                        -----
 //
 // count  key   key  next        count  key   key  next        count  key   key  next
 // +--------------------+        +--------------------+        +--------------------+
-// |   |  01 |  09 |    |        |   |  10 | ... |    |        |   | ... | ... |    |
+// |   |  10 |  19 |    |        |   |  80 | ... |    |        |   | ... | ... |    |
 // | 2 |-----+-----| pnt|---->---| 1 |-----+-----|NULL|        | . |-----+-----| ...|
 // |   | pnt | pnt |    |        |   | pnt | ... |    |        |   | ... | ... |    |
 // +--------------------+        +--------------------+        +--------------------+
@@ -71,8 +71,8 @@ int main(int _n_args, char ** _v_args)
 
     lst_unique_keys.push_back(15);
     lst_unique_keys.push_back(24);
-    lst_unique_keys.push_back(32);
-    lst_unique_keys.push_back(61);
+    lst_unique_keys.push_back(22);
+    lst_unique_keys.push_back(11);
 
     std::fstream fs_index ("index.dat", std::fstream::in | std::fstream::out | std::fstream::binary | std::fstream::trunc);
 
@@ -90,12 +90,12 @@ int main(int _n_args, char ** _v_args)
 
     for(it = lst_unique_keys.begin(); it != lst_unique_keys.end(); ++it)
     {
-        std::cout << "********** insert: " << (*it) << ", " << 100 - (*it) <<  " **********" << std::endl;
+        std::cout << "************************* INSERT: " << (*it) << ", " << 100 - (*it) <<  " *************************" << std::endl;
         root.insert((*it), 100 - (*it));
         std::cout << root.toString() << std::endl;
     }
 
-    std::cout << std::endl << "=== result: ===" << std::endl;
+    std::cout << std::endl << "RESULT: =======================================================" << std::endl;
     std::cout << root.toString() << std::endl << std::endl;
 
     std::cout << "done." << std::endl;

@@ -12,11 +12,12 @@ public:
 
     inline bool isEmpty() { return m_count == m_max_count; }
     void insert(uint32_t _key, uint64_t _address);
-    uint32_t split(Leaf* _new_leaf, uint64_t _new_leaf_address);
+    uint32_t split(Leaf & _new_leaf);
     void setNextLeafAddress(uint64_t _next_leaf_address);
 
     void read(std::fstream & _input_file);
-    void write(std::fstream & _output_file);
+    void append(std::fstream & _output_file);
+    void update(std::fstream & _output_file, std::streampos _position);
 
     std::string toString();
 
