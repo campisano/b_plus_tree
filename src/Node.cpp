@@ -26,7 +26,7 @@ Node::~Node()
     m_leafs.clear();
 }
 
-Leaf * Node::insert(unsigned long int _key, unsigned long long int _pointer)
+Leaf * Node::insert(unsigned long int _new_key, unsigned long long int _new_address)
 {
     // if there are subnodes
     if(m_keys.size() > 0)
@@ -36,15 +36,15 @@ Leaf * Node::insert(unsigned long int _key, unsigned long long int _pointer)
 
         //TODO [CMP] test!!!
         // if first key is greather then new key
-        if((*it_keys) > _key)
+        if((*it_keys) > _new_key)
         {
             // insert new leaf at start, configuring next leaf as current
             Leaf * new_leaf = new Leaf(m_size, m_block_size);
-            // TODO [CMP] leaf pointer to emulate disk reference is the (*it_keys), temporary
-            new_leaf->setNextLeafPointer((*it_keys));
-            new_leaf->insert(_key, _pointer);
+            // TODO [CMP] leaf address to emulate disk reference is the (*it_keys), temporary
+            new_leaf->setNextLeafAddress((*it_keys));
+            new_leaf->insert(_new_key, _new_address);
 
-            m_keys.push_front(_key);
+            m_keys.push_front(_new_key);
             m_leafs.push_front(new_leaf);
 
             return new_leaf;
@@ -62,7 +62,7 @@ Leaf * Node::insert(unsigned long int _key, unsigned long long int _pointer)
             leaf = (*it_leafs);
 
             // node key must be less or equal then next sub node (or leaf) key
-            if(key <= _key)
+            if(key <= _new_key)
             {
                 it_next_key = it_keys;
                 ++it_next_key;
@@ -70,16 +70,16 @@ Leaf * Node::insert(unsigned long int _key, unsigned long long int _pointer)
                 ++it_next_leafs;
 
                 // if is equal
-                if((key == _key) ||
+                if((key == _new_key) ||
                    // or there is no next key
                    (it_next_key == m_keys.end()) ||
                    // or next key is greather then new key
-                   (*it_next_key) > _key)
+                   (*it_next_key) > _new_key)
                 {
                     // then insert if not empty
                     if(!leaf->isEmpty())
                     {
-                        leaf->insert(_key, _pointer);
+                        leaf->insert(_new_key, _new_address);
 
                         return leaf;
                     }
@@ -88,12 +88,20 @@ Leaf * Node::insert(unsigned long int _key, unsigned long long int _pointer)
                     {
                         Leaf * new_leaf = new Leaf(m_size, m_block_size);
 
-                        // TODO [CMP] leaf pointer to emulate disk reference is the _key, temporary
-                        unsigned long int new_leaf_key = leaf->split(new_leaf, _key);
-                        new_leaf->insert(_key, _pointer);
-
-                        m_keys.insert(it_next_key, new_leaf_key);
+                        // TODO [CMP] leaf address to emulate next_leaf disk reference is the new_leaf_first_key, temporary
+                        unsigned long int new_leaf_first_key = leaf->split(new_leaf, 0); // TODO [CMP] 0 is temporary
+                        leaf->setNextLeafAddress(new_leaf_first_key);
+                        m_keys.insert(it_next_key, new_leaf_first_key);
                         m_leafs.insert(it_next_leafs, new_leaf);
+
+                        if(_new_key < new_leaf_first_key )
+                        {
+                            leaf->insert(_new_key, _new_address);
+                        }
+                        else
+                        {
+                            new_leaf->insert(_new_key, _new_address);
+                        }
 
                         return new_leaf;
                     }
@@ -107,9 +115,9 @@ Leaf * Node::insert(unsigned long int _key, unsigned long long int _pointer)
 
     // if code reach this point, insert new leaf at end
     Leaf * new_leaf = new Leaf(m_size, m_block_size);
-    new_leaf->insert(_key, _pointer);
+    new_leaf->insert(_new_key, _new_address);
 
-    m_keys.push_back(_key);
+    m_keys.push_back(_new_key);
     m_leafs.push_back(new_leaf);
 
     return new_leaf;

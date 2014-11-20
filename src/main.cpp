@@ -25,10 +25,6 @@
 
 int main(int _n_args, char ** _v_args)
 {
-    //TODO [CMP] bug!
-    // em caso de split, o novo leaf é adicionado no topo, mas node está achando que os leaf embaixo deles estão ordenados.
-    // na verdade no disco essa varridura deve ser ordenada
-
     // random unique insertions
     std::list<unsigned long int> lst_unique_keys;
 

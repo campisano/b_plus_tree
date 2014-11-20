@@ -10,9 +10,9 @@ public:
     virtual ~Leaf();
 
     inline bool isEmpty() { return m_count == m_size; }
-    void insert(unsigned long int _key, unsigned long long int _pointer);
-    unsigned long int split(Leaf* _new_leaf, unsigned long long int _new_leaf_pointer);
-    void setNextLeafPointer(unsigned long long int _next_leaf_pointer);
+    void insert(unsigned long int _key, unsigned long long int _address);
+    unsigned long int split(Leaf* _new_leaf, unsigned long long int _new_leaf_address);
+    void setNextLeafAddress(unsigned long long int _next_leaf_address);
 
     void readLeaf(FILE * _input_file);
     void writeLeaf(FILE * _output_file);
@@ -27,6 +27,6 @@ private:
     // data struct to write on disk
     unsigned short int m_count;
     unsigned long int * m_keys;
-    unsigned long long int * m_pointers;
-    unsigned long long int m_next_leaf_pointer;
+    unsigned long long int * m_addresses;
+    unsigned long long int m_next_leaf_address;
 };

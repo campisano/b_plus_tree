@@ -11,7 +11,7 @@ public:
     explicit Node(unsigned short int _size, unsigned short int _block_size);
     virtual ~Node();
 
-    Leaf * insert(unsigned long int _key, unsigned long long int _pointer);
+    Leaf * insert(unsigned long int _new_key, unsigned long long int _new_address);
 
     std::string toString();
 
