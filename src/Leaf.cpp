@@ -44,7 +44,7 @@ Leaf::~Leaf()
     m_next_leaf_address = -1;
 }
 
-void Leaf::insert(uint32_t _key, uint64_t _address)
+uint32_t Leaf::insert(uint32_t _key, uint64_t _address)
 {
     if(isEmpty())
     {
@@ -76,6 +76,8 @@ void Leaf::insert(uint32_t _key, uint64_t _address)
     m_keys[pos] = _key;
     m_addresses[pos] = _address;
     ++m_count;
+
+    return m_keys[0];
 }
 
 uint32_t Leaf::split(Leaf & _new_leaf)
@@ -112,7 +114,7 @@ void Leaf::setNextLeafAddress(uint64_t _next_leaf_address)
     m_next_leaf_address = _next_leaf_address;
 }
 
-void Leaf::read(std::fstream & _input_file)
+void Leaf::readToNext(std::fstream & _input_file)
 {
     _input_file.read((char *)(&m_count), sizeof(m_count));
     _input_file.read((char *)(m_keys), sizeof(m_keys[0]) * m_max_count);
@@ -121,6 +123,17 @@ void Leaf::read(std::fstream & _input_file)
 
     // skip free block space
     _input_file.seekg(m_block_size - m_real_data_size, _input_file.cur);
+}
+
+void Leaf::loadAt(std::fstream & _input_file, std::streampos _position)
+{
+    // remember the read file position
+    std::streampos r_pos = _input_file.tellg();
+    // go to asked leaf read position
+    _input_file.seekg(_position);
+    readToNext(_input_file);
+    // restore original read position
+    _input_file.seekg(r_pos);
 }
 
 void Leaf::append(std::fstream & _output_file)
@@ -138,7 +151,7 @@ void Leaf::update(std::fstream & _output_file, std::streampos _position)
 {
     // remember the write file position
     std::streampos w_pos = _output_file.tellp();
-     // go to asked write position
+    // go to asked write position
     _output_file.seekp(_position);
     append(_output_file);
     // restore original write position

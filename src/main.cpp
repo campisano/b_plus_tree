@@ -55,24 +55,25 @@ int main(int _n_args, char ** _v_args)
     // random unique insertions
     std::list<uint32_t> lst_unique_keys;
 
-    /*
-    uint32_t key;
-
-    while(lst_unique_keys.size() < tmp_num_ceps)
     {
-        key =  rand() % 100;
+        uint32_t key;
 
-        if(std::find(lst_unique_keys.begin(), lst_unique_keys.end(), key) == lst_unique_keys.end())
+        while(lst_unique_keys.size() < tmp_num_ceps)
         {
-            lst_unique_keys.push_back(key);
+            key =  rand() % 100;
+
+            if(std::find(lst_unique_keys.begin(), lst_unique_keys.end(), key) == lst_unique_keys.end())
+            {
+                lst_unique_keys.push_back(key);
+            }
         }
     }
-    */
-
-    lst_unique_keys.push_back(15);
-    lst_unique_keys.push_back(24);
-    lst_unique_keys.push_back(22);
-    lst_unique_keys.push_back(11);
+    {
+    /*    lst_unique_keys.push_back(15);
+        lst_unique_keys.push_back(24);
+        lst_unique_keys.push_back(22);
+        lst_unique_keys.push_back(11);*/
+    }
 
     std::fstream fs_index ("index.dat", std::fstream::in | std::fstream::out | std::fstream::binary | std::fstream::trunc);
 
