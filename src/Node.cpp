@@ -5,57 +5,34 @@
 
 #include "Leaf.h"
 
-// remove all new
-
 Node::Node(std::fstream & _fs_index, const uint16_t _max_count, const uint16_t _block_size) :
-    m_fs_index(_fs_index), m_max_count(_max_count), m_block_size(_block_size)
+    IndexDataStructure(_max_count, _block_size), m_fs_index(_fs_index)
 {
-    m_count = 0;
-
-    m_keys = new uint32_t[m_max_count];
-    m_leaf_addresses = new uint64_t[m_max_count + 1];
-
-    m_real_data_size =
-        sizeof(m_count) +
-        m_max_count * sizeof(m_keys[0]) +
-        (m_max_count + 1) * sizeof(m_leaf_addresses[0]);
-
-    if(m_block_size < m_real_data_size)
-    {
-        std::stringstream ss;
-        ss << "Block size is less then real leaf size:" << std::endl;
-        ss << "Block defined size = " << m_block_size << std::endl;
-        ss << "m_max_count = " << m_max_count << std::endl;
-        ss << "sizeof(m_count): " << sizeof(m_count) << std::endl;
-        ss << "sizeof(m_keys[0]): " << sizeof(m_keys[0]) << std::endl;
-        ss << "sizeof(m_leaf_addresses[0]): " << sizeof(m_leaf_addresses[0]) << std::endl;
-        ss << "m_max_count * sizeof(m_keys[0]) + (m_max_count + 1) * sizeof(m_leaf_addresses[0]): " << m_max_count * sizeof(m_keys[0]) + (m_max_count + 1) * sizeof(m_leaf_addresses[0]) << std::endl;
-        ss << "Total real leaf size = " << m_real_data_size << std::endl;
-
-        throw std::invalid_argument(ss.str());
-    }
+    m_next_sibling_address = -1;
 }
 
 Node::~Node()
 {
-    delete m_leaf_addresses;
-    delete m_keys;
-
-    m_count = 0;
+    m_next_sibling_address = -1;
 }
 
-
-// TODO [CMP]
-// - implementar a criação de nodes, que cresca para cima
-//#include <iostream>
-
-void Node::insert(uint32_t _new_key, uint64_t _new_address)
+bool Node::hasLeafs()
 {
-    // first subnode
+    return m_next_sibling_address == ((uint64_t) -1);
+}
+
+Node * Node::insert(uint32_t _new_key, uint64_t _new_address)
+{
+    if(!hasLeafs())
+    {
+        return this;
+    }
+
+    // if is first leaf
     if(m_count == 0)
     {
         m_keys[0] = _new_key;
-        m_leaf_addresses[0] = m_fs_index.tellp();
+        m_addresses[0] = m_fs_index.tellp();
 
         Leaf new_leaf(m_max_count, m_block_size);
         new_leaf.insert(_new_key, _new_address);
@@ -65,7 +42,7 @@ void Node::insert(uint32_t _new_key, uint64_t _new_address)
 
         //TODO write node
     }
-    // if there are leafs
+    // else there are some leafs
     else if(m_count > 0)
     {
         // if first key is greather then new key
@@ -82,15 +59,15 @@ void Node::insert(uint32_t _new_key, uint64_t _new_address)
                 for(uint16_t rpos = m_count; rpos > 0; --rpos)
                 {
                     m_keys[rpos] = m_keys[rpos - 1];
-                    m_leaf_addresses[rpos] = m_leaf_addresses[rpos - 1];
+                    m_addresses[rpos] = m_addresses[rpos - 1];
                 }
 
                 m_keys[0] = _new_key;
-                m_leaf_addresses[0] = m_fs_index.tellp();
+                m_addresses[0] = m_fs_index.tellp();
 
                 // insert new leaf at start, configuring next leaf as current
                 Leaf new_leaf(m_max_count, m_block_size);
-                new_leaf.setNextLeafAddress(m_leaf_addresses[1]); // link with the old first
+                new_leaf.setNextLeafAddress(m_addresses[1]); // link with the old first
                 new_leaf.insert(_new_key, _new_address);
                 new_leaf.append(m_fs_index);
 
@@ -115,15 +92,15 @@ void Node::insert(uint32_t _new_key, uint64_t _new_address)
                        (m_keys[pos + 1] > _new_key))
                     {
                         Leaf leaf(m_max_count, m_block_size);
-                        leaf.loadAt(m_fs_index, m_leaf_addresses[pos]);
+                        leaf.loadAt(m_fs_index, m_addresses[pos]);
 
                         // then insert if not empty
                         if(!leaf.isEmpty())
                         {
                             leaf.insert(_new_key, _new_address);
-                            leaf.update(m_fs_index, m_leaf_addresses[pos]);
+                            leaf.update(m_fs_index, m_addresses[pos]);
 
-                            return;
+                            return this;
                         }
                         // else split and insert
                         else
@@ -136,7 +113,7 @@ void Node::insert(uint32_t _new_key, uint64_t _new_address)
                             else
                             {
                                 // get the previous successor, if split_leaf is the last one then there is no successor
-                                uint64_t previous_pos_successor = (pos + 1 == m_count) ? -1 : m_leaf_addresses[pos + 1];
+                                uint64_t previous_pos_successor = (pos + 1 == m_count) ? -1 : m_addresses[pos + 1];
 
                                 Leaf split_leaf(m_max_count, m_block_size);
                                 uint32_t split_leaf_first_key = leaf.split(split_leaf);
@@ -146,7 +123,7 @@ void Node::insert(uint32_t _new_key, uint64_t _new_address)
                                 for(uint16_t rpos = m_count; rpos > pos; --rpos)
                                 {
                                     m_keys[rpos] = m_keys[rpos - 1];
-                                    m_leaf_addresses[rpos] = m_leaf_addresses[rpos - 1];
+                                    m_addresses[rpos] = m_addresses[rpos - 1];
                                 }
 
                                 if(_new_key < split_leaf_first_key )
@@ -160,17 +137,17 @@ void Node::insert(uint32_t _new_key, uint64_t _new_address)
                                 }
 
                                 m_keys[pos + 1] = split_leaf_first_key;
-                                m_leaf_addresses[pos + 1] = m_fs_index.tellp();
+                                m_addresses[pos + 1] = m_fs_index.tellp();
                                 split_leaf.append(m_fs_index); // append new
 
-                                leaf.setNextLeafAddress(m_leaf_addresses[pos + 1]); // link with the old first
-                                leaf.update(m_fs_index, m_leaf_addresses[pos]); // save old splitted
+                                leaf.setNextLeafAddress(m_addresses[pos + 1]); // link with the old first
+                                leaf.update(m_fs_index, m_addresses[pos]); // save old splitted
 
                                 ++m_count;
 
                                 //TODO write node?
 
-                                return;
+                                return this;
                             }
                         }
                     }
@@ -189,13 +166,13 @@ void Node::insert(uint32_t _new_key, uint64_t _new_address)
                     // link previous with new leaf
                     {
                         Leaf last_leaf(m_max_count, m_block_size);
-                        last_leaf.loadAt(m_fs_index, m_leaf_addresses[m_count - 1]);
+                        last_leaf.loadAt(m_fs_index, m_addresses[m_count - 1]);
                         last_leaf.setNextLeafAddress(m_fs_index.tellp());
-                        last_leaf.update(m_fs_index, m_leaf_addresses[m_count - 1]);
+                        last_leaf.update(m_fs_index, m_addresses[m_count - 1]);
                     }
 
                     m_keys[m_count] = _new_key;
-                    m_leaf_addresses[m_count] = m_fs_index.tellp();
+                    m_addresses[m_count] = m_fs_index.tellp();
 
                     Leaf new_leaf(m_max_count, m_block_size);
                     new_leaf.insert(_new_key, _new_address);
@@ -208,25 +185,49 @@ void Node::insert(uint32_t _new_key, uint64_t _new_address)
             //TODO write node?
         }
     }
+
+    return this;
 }
 
 std::string Node::toString()
 {
     std::stringstream ss;
 
-    ss << '\t' << "Node, leaf count: " << m_count << std::endl;
-
     std::streampos pos = m_fs_index.tellg(); // remember the file position
-    Leaf leaf(m_max_count, m_block_size);
 
-    for(uint16_t i = 0; i < m_count; ++i)
+    ss << '\t' << "Node, has leaf: " << (hasLeafs() ? "true" : "false");
+
+    if(!hasLeafs())
     {
-        m_fs_index.seekg(m_leaf_addresses[i]); // go to leaf position on the index file
-        leaf.readToNext(m_fs_index);
+        ss << '\t' << "node count: " << m_count << std::endl;
 
-        ss << '\t' << "--------------------------------------------------" << std::endl;
-        ss << '\t' << '\t' << "Leaf key: " << m_keys[i] << ", creation id: " << 1 + m_leaf_addresses[i] / m_block_size << ", index address: " << m_leaf_addresses[i] << std::endl;
-        ss << leaf.toString();
+        Node node(m_fs_index, m_max_count, m_block_size);
+
+        for(uint16_t i = 0; i < m_count; ++i)
+        {
+            m_fs_index.seekg(m_addresses[i]); // go to node position on the index file
+            node.readToNext(m_fs_index);
+
+            ss << '\t' << "--------------------------------------------------" << std::endl;
+            ss << '\t' << '\t' << "Node key: " << m_keys[i] << ", creation id: " << 1 + m_addresses[i] / m_block_size << ", index address: " << m_addresses[i] << std::endl;
+            ss << node.toString();
+        }
+    }
+    else
+    {
+        ss << '\t' << "leaf count: " << m_count << std::endl;
+
+        Leaf leaf(m_max_count, m_block_size);
+
+        for(uint16_t i = 0; i < m_count; ++i)
+        {
+            m_fs_index.seekg(m_addresses[i]); // go to leaf position on the index file
+            leaf.readToNext(m_fs_index);
+
+            ss << '\t' << "--------------------------------------------------" << std::endl;
+            ss << '\t' << '\t' << "Leaf key: " << m_keys[i] << ", creation id: " << 1 + m_addresses[i] / m_block_size << ", index address: " << m_addresses[i] << std::endl;
+            ss << leaf.toString();
+        }
     }
 
     m_fs_index.seekg(pos); // restore original position

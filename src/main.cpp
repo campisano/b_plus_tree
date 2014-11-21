@@ -68,12 +68,6 @@ int main(int _n_args, char ** _v_args)
             }
         }
     }
-    {
-    /*    lst_unique_keys.push_back(15);
-        lst_unique_keys.push_back(24);
-        lst_unique_keys.push_back(22);
-        lst_unique_keys.push_back(11);*/
-    }
 
     std::fstream fs_index ("index.dat", std::fstream::in | std::fstream::out | std::fstream::binary | std::fstream::trunc);
 
@@ -84,20 +78,22 @@ int main(int _n_args, char ** _v_args)
         return 1;
     }
 
-    Node root(fs_index, NK, BS);
     std::cout << "keys per leaf: " << NK << ", block size: " << BS << std::endl << std::endl;
+    Node initial_root(fs_index, NK, BS);
+    initial_root.append(fs_index);
+    Node * root = &initial_root;
 
     std::list<uint32_t>::iterator it;
 
     for(it = lst_unique_keys.begin(); it != lst_unique_keys.end(); ++it)
     {
         std::cout << "************************* INSERT: " << (*it) << ", " << 100 - (*it) <<  " *************************" << std::endl;
-        root.insert((*it), 100 - (*it));
-        std::cout << root.toString() << std::endl;
+        root = root->insert((*it), 100 - (*it));
+        std::cout << root->toString() << std::endl;
     }
 
     std::cout << std::endl << "RESULT: =======================================================" << std::endl;
-    std::cout << root.toString() << std::endl << std::endl;
+    std::cout << root->toString() << std::endl << std::endl;
 
     std::cout << "done." << std::endl;
 

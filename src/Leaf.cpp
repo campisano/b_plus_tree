@@ -4,44 +4,14 @@
 #include <stdexcept>
 
 Leaf::Leaf(const uint16_t _max_count, const uint16_t _block_size) :
-    m_max_count(_max_count), m_block_size(_block_size)
+    IndexDataStructure(_max_count, _block_size)
 {
-    m_count = 0;
-    m_next_leaf_address = -1;
-
-    m_keys = new uint32_t[m_max_count];
-    m_addresses = new uint64_t[m_max_count];
-
-    m_real_data_size =
-        sizeof(m_count) +
-        m_max_count * sizeof(m_keys[0]) +
-        m_max_count * sizeof(m_addresses[0]) +
-        sizeof(m_next_leaf_address);
-
-    if(m_block_size < m_real_data_size)
-    {
-        std::stringstream ss;
-        ss << "Block size is less then real leaf size:" << std::endl;
-        ss << "Block defined size = " << m_block_size << std::endl;
-        ss << "m_max_count = " << m_max_count << std::endl;
-        ss << "sizeof(m_count): " << sizeof(m_count) << std::endl;
-        ss << "sizeof(m_keys[0]): " << sizeof(m_keys[0]) << std::endl;
-        ss << "sizeof(m_addresses[0]): " << sizeof(m_addresses[0]) << std::endl;
-        ss << "m_max_count * sizeof(m_keys[0]) + m_max_count * sizeof(m_addresses[0]): " << m_max_count * sizeof(m_keys[0]) + m_max_count * sizeof(m_addresses[0]) << std::endl;
-        ss << "sizeof(m_next_leaf_address): " << sizeof(m_next_leaf_address) << std::endl;
-        ss << "Total real leaf size = " << m_real_data_size << std::endl;
-
-        throw std::invalid_argument(ss.str());
-    }
+    m_next_sibling_address = -1;
 }
 
 Leaf::~Leaf()
 {
-    delete m_addresses;
-    delete m_keys;
-
-    m_count = 0;
-    m_next_leaf_address = -1;
+    m_next_sibling_address = -1;
 }
 
 uint32_t Leaf::insert(uint32_t _key, uint64_t _address)
@@ -103,7 +73,7 @@ uint32_t Leaf::split(Leaf & _new_leaf)
     _new_leaf.m_count = m_count - half;    // ex 7 = 13 - 6
     m_count = half; // ex 7 // ex 5
 
-    _new_leaf.m_next_leaf_address = m_next_leaf_address;
+    _new_leaf.m_next_sibling_address = m_next_sibling_address;
 
     // return new leaf first key
     return _new_leaf.m_keys[0];
@@ -111,18 +81,7 @@ uint32_t Leaf::split(Leaf & _new_leaf)
 
 void Leaf::setNextLeafAddress(uint64_t _next_leaf_address)
 {
-    m_next_leaf_address = _next_leaf_address;
-}
-
-void Leaf::readToNext(std::fstream & _input_file)
-{
-    _input_file.read((char *)(&m_count), sizeof(m_count));
-    _input_file.read((char *)(m_keys), sizeof(m_keys[0]) * m_max_count);
-    _input_file.read((char *)(m_addresses), sizeof(m_addresses[0]) * m_max_count);
-    _input_file.read((char *)(&m_next_leaf_address), sizeof(m_next_leaf_address));
-
-    // skip free block space
-    _input_file.seekg(m_block_size - m_real_data_size, _input_file.cur);
+    m_next_sibling_address = _next_leaf_address;
 }
 
 void Leaf::loadAt(std::fstream & _input_file, std::streampos _position)
@@ -134,17 +93,6 @@ void Leaf::loadAt(std::fstream & _input_file, std::streampos _position)
     readToNext(_input_file);
     // restore original read position
     _input_file.seekg(r_pos);
-}
-
-void Leaf::append(std::fstream & _output_file)
-{
-    _output_file.write((char *)(&m_count), sizeof(m_count));
-    _output_file.write((char *)(m_keys), sizeof(m_keys[0]) * m_max_count);
-    _output_file.write((char *)(m_addresses), sizeof(m_addresses[0]) * m_max_count);
-    _output_file.write((char *)(&m_next_leaf_address), sizeof(m_next_leaf_address));
-
-    // skip free block space
-    _output_file.seekg(m_block_size - m_real_data_size, _output_file.cur);
 }
 
 void Leaf::update(std::fstream & _output_file, std::streampos _position)
@@ -169,7 +117,7 @@ std::string Leaf::toString()
         ss << '\t' << '\t' << '\t' << "key: " << m_keys[pos] << " address: " << m_addresses[pos] << std::endl;
     }
 
-    ss << '\t' << '\t' << "next_address: " << m_next_leaf_address << std::endl;
+    ss << '\t' << '\t' << "next_address: " << m_next_sibling_address << std::endl;
 
     return ss.str();
 }

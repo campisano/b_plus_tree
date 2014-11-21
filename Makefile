@@ -108,8 +108,9 @@ debug:				compile
 OBJECTS:			MAIN
 
 MAIN:				NODE $(OUT_DIR)/main.o
-NODE:				LEAF $(OUT_DIR)/Node.o
-LEAF:				$(OUT_DIR)/Leaf.o
+NODE:				INEXDATASTRUCTURE LEAF $(INC_DIR)/Node.h $(OUT_DIR)/Node.o
+LEAF:				INEXDATASTRUCTURE $(INC_DIR)/Leaf.h $(OUT_DIR)/Leaf.o
+INEXDATASTRUCTURE:	$(INC_DIR)/IndexDataStructure.h $(OUT_DIR)/IndexDataStructure.o
 
 
 
