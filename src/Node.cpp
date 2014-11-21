@@ -12,13 +12,13 @@ Node::Node(std::fstream & _fs_index, const uint16_t _max_count, const uint16_t _
 {
     m_count = 0;
 
-    m_keys = new uint32_t[m_max_count - 1];
-    m_leaf_addresses = new uint64_t[m_max_count];
+    m_keys = new uint32_t[m_max_count];
+    m_leaf_addresses = new uint64_t[m_max_count + 1];
 
     m_real_data_size =
         sizeof(m_count) +
-        (m_max_count - 1) * sizeof(m_keys[0]) +
-        m_max_count * sizeof(m_leaf_addresses[0]);
+        m_max_count * sizeof(m_keys[0]) +
+        (m_max_count + 1) * sizeof(m_leaf_addresses[0]);
 
     if(m_block_size < m_real_data_size)
     {
@@ -29,7 +29,7 @@ Node::Node(std::fstream & _fs_index, const uint16_t _max_count, const uint16_t _
         ss << "sizeof(m_count): " << sizeof(m_count) << std::endl;
         ss << "sizeof(m_keys[0]): " << sizeof(m_keys[0]) << std::endl;
         ss << "sizeof(m_leaf_addresses[0]): " << sizeof(m_leaf_addresses[0]) << std::endl;
-        ss << "m_max_count * sizeof(m_keys[0]) + m_max_count * sizeof(m_leaf_addresses[0]): " << m_max_count * sizeof(m_keys[0]) + m_max_count * sizeof(m_leaf_addresses[0]) << std::endl;
+        ss << "m_max_count * sizeof(m_keys[0]) + (m_max_count + 1) * sizeof(m_leaf_addresses[0]): " << m_max_count * sizeof(m_keys[0]) + (m_max_count + 1) * sizeof(m_leaf_addresses[0]) << std::endl;
         ss << "Total real leaf size = " << m_real_data_size << std::endl;
 
         throw std::invalid_argument(ss.str());
@@ -135,10 +135,12 @@ void Node::insert(uint32_t _new_key, uint64_t _new_address)
                             }
                             else
                             {
+                                // get the previous successor, if split_leaf is the last one then there is no successor
+                                uint64_t previous_pos_successor = (pos + 1 == m_count) ? -1 : m_leaf_addresses[pos + 1];
 
                                 Leaf split_leaf(m_max_count, m_block_size);
                                 uint32_t split_leaf_first_key = leaf.split(split_leaf);
-                                split_leaf.setNextLeafAddress(m_leaf_addresses[pos + 1]); // link with the previous successor
+                                split_leaf.setNextLeafAddress(previous_pos_successor);
 
                                 // shift all elements to next pos
                                 for(uint16_t rpos = m_count; rpos > pos; --rpos)

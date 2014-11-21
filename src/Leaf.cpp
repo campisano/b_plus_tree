@@ -27,7 +27,7 @@ Leaf::Leaf(const uint16_t _max_count, const uint16_t _block_size) :
         ss << "sizeof(m_count): " << sizeof(m_count) << std::endl;
         ss << "sizeof(m_keys[0]): " << sizeof(m_keys[0]) << std::endl;
         ss << "sizeof(m_addresses[0]): " << sizeof(m_addresses[0]) << std::endl;
-        ss << "m_max_count * (m_keys[0] size + m_addresses[0] size): " << m_max_count * (sizeof(m_keys[0]) + sizeof(m_addresses[0])) << std::endl;
+        ss << "m_max_count * sizeof(m_keys[0]) + m_max_count * sizeof(m_addresses[0]): " << m_max_count * sizeof(m_keys[0]) + m_max_count * sizeof(m_addresses[0]) << std::endl;
         ss << "sizeof(m_next_leaf_address): " << sizeof(m_next_leaf_address) << std::endl;
         ss << "Total real leaf size = " << m_real_data_size << std::endl;
 
