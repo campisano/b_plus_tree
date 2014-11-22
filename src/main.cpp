@@ -51,6 +51,7 @@
 #include <fstream>
 #include <iostream>
 #include <list>
+#include <stdexcept>
 #include <stdint.h>
 
 #include "Node.h"
@@ -84,21 +85,45 @@ int main(int _n_args, char ** _v_args)
     }
 
     std::cout << "keys per leaf: " << NK << ", block size: " << BS << std::endl << std::endl;
-    Node first_created_node(fs_index, NK, BS);
+
+    // allocate root node
+    Node * root = new Node(fs_index, NK, BS, true);
 
     // write initial root
-    first_created_node.append(fs_index);
+    root->writeToNext(fs_index);
 
-    // root node is, initially, the first created node
-    Node * root = &first_created_node;
-
+    bool inserted;
+    uint32_t new_key;
+    uint64_t new_address;
     std::list<uint32_t>::iterator it;
 
     // insert all keys with they disk address
     for(it = lst_unique_keys.begin(); it != lst_unique_keys.end(); ++it)
     {
-        std::cout << "************************* INSERT: " << (*it) << ", " << 100 - (*it) <<  " *************************" << std::endl;
-        root = root->insert((*it), 100 - (*it));
+        new_key = (*it);
+        new_address = 100 - new_key;
+
+        std::cout << "************************* INSERT: " << new_key << ", " << new_address <<  " *************************" << std::endl;
+
+        // insert
+        inserted = root->insert(new_key, new_address);
+
+        // if not inserted then node need to be splitted and rotated
+        if(!inserted)
+        {
+            // create new root node
+            Node * new_root = new Node(fs_index, NK, BS, false);
+
+            // rotate
+            new_root->splitAndRotate(*root, new_key, new_address);
+
+            // delete old root node
+            delete root;
+
+            // swap
+            root = new_root;
+        }
+
         std::cout << root->toString() << std::endl; // print status at every insert
     }
 
@@ -107,6 +132,9 @@ int main(int _n_args, char ** _v_args)
     std::cout << root->toString() << std::endl << std::endl;
 
     std::cout << "done." << std::endl;
+
+    // free root node memory
+    delete root;
 
     // close the index file
     fs_index.close();

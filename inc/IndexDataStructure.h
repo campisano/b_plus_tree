@@ -8,9 +8,15 @@ class IndexDataStructure
 {
 public:
     inline bool isEmpty() { return m_count == m_max_count; }
+    uint32_t getFirstKey();
+
+    void split(IndexDataStructure & _new_index_data);
 
     void readToNext(std::fstream & _input_file);
-    void append(std::fstream & _output_file);
+    void writeToNext(std::fstream & _output_file);
+    void loadAt(std::fstream & _input_file, std::streampos _position);
+    void writeAt(std::fstream & _output_file, std::streampos _position);
+    std::streampos getIndexPosition();
 
 protected:
     explicit IndexDataStructure(const uint16_t _max_count, const uint16_t _block_size);
@@ -25,6 +31,11 @@ protected:
     uint32_t * m_keys;
     uint64_t * m_addresses;
     uint64_t m_next_sibling_address;
+
+private:
+    // auxiliary data
+    bool m_is_indexed;
+    std::streampos m_index_position;
 };
 
 #endif

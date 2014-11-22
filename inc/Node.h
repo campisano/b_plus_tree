@@ -13,10 +13,13 @@ class Node : public IndexDataStructure
 {
 public:
     explicit Node(std::fstream & _fs_index, const uint16_t _max_count, const uint16_t _block_size);
+    explicit Node(std::fstream & _fs_index, const uint16_t _max_count, const uint16_t _block_size, bool _has_leaf);
     virtual ~Node();
 
     bool hasLeafs();
-    Node * insert(uint32_t _new_key, uint64_t _new_address);
+    bool insert(uint32_t _new_key, uint64_t _new_address);
+
+    void splitAndRotate(Node & _child_to_split, uint32_t _new_key, uint64_t _new_address);
 
     std::string toString();
 
