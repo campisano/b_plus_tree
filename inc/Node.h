@@ -19,7 +19,7 @@ public:
     void hasLeafs(bool _has_leafs);
     bool insert(uint32_t _new_key, uint64_t _new_address);
 
-    void splitAndRotate(Node & _child_to_split, uint32_t _new_key, uint64_t _new_address);
+    void splitOldRootAndRotate(Node & _old_root_to_split, uint32_t _new_key, uint64_t _new_address);
 
     std::string toString();
 

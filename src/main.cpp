@@ -43,8 +43,11 @@
 //total
 //#define BS 4096 // BLOCK_SIZE: 2 + (4 + 8) * 340 + 8 = 4090
 
-#define NK 4  // NUM_OF_KEY_PER_LEAF
-#define BS 60 // BLOCK_SIZE: 2 + (4 + 8) * NK + 8 = 58
+//#define NK 4  // NUM_OF_KEY_PER_LEAF
+//#define BS 60 // BLOCK_SIZE: 2 + (4 + 8) * NK + 8 = 58
+
+#define NK 2  // NUM_OF_KEY_PER_LEAF
+#define BS 40 // BLOCK_SIZE: 2 + (4 + 8) * NK + 8 = 34
 
 #include <algorithm>
 #include <cstdlib>
@@ -115,7 +118,7 @@ int main(int _n_args, char ** _v_args)
             Node * new_root = new Node(fs_index, NK, BS);
 
             // rotate
-            new_root->splitAndRotate(*root, new_key, new_address);
+            new_root->splitOldRootAndRotate(*root, new_key, new_address);
 
             // delete old root node
             delete root;

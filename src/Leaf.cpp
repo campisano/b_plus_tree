@@ -60,7 +60,7 @@ std::string Leaf::toString()
 
     for(uint16_t pos = 0; pos < m_count; ++pos)
     {
-        ss << '\t' << '\t' << '\t' << "key: " << m_keys[pos] << " address: " << m_addresses[pos] << std::endl;
+        ss << '\t' << '\t' << '\t' << "key: <" << m_keys[pos] << "> address: " << m_addresses[pos] << std::endl;
     }
 
     ss << '\t' << '\t' << "next_address: " << m_next_sibling_address << std::endl;

@@ -306,58 +306,59 @@ bool Node::insert(uint32_t _new_key, uint64_t _new_address)
     return true;
 }
 
-void Node::splitAndRotate(Node & _child_to_split, uint32_t _new_key, uint64_t _new_address)
+// current node is the new_root_node, _old_root_to_split is the old root _new_sibling_node is the new sibling node
+void Node::splitOldRootAndRotate(Node & _old_root_to_split, uint32_t _new_key, uint64_t _new_address)
 {
-    if(_child_to_split.m_count != m_max_count)
+    if(_old_root_to_split.m_count != m_max_count)
     {
-        throw std::invalid_argument("_child_to_split must be full");
+        throw std::invalid_argument("_old_root_to_split must be full");
     }
 
     if(m_count != 0)
     {
-        throw std::invalid_argument("New root must be empty");
+        throw std::invalid_argument("new_root_node must be empty");
     }
 
     // split
-    Node split_node(m_fs_index, m_max_count, m_block_size);
-    split_node.hasLeafs(_child_to_split.hasLeafs());
-    _child_to_split.split(split_node);
+    Node _new_sibling_node(m_fs_index, m_max_count, m_block_size);
+    _new_sibling_node.hasLeafs(_old_root_to_split.hasLeafs()); // if his brother has leafs, new brother will have leafs
+    _old_root_to_split.split(_new_sibling_node);
 
-    // write
-    _child_to_split.writeAt(m_fs_index, _child_to_split.getIndexPosition()); //update
-    split_node.writeToNext(m_fs_index); // append new
+    // save changes
+    _old_root_to_split.writeAt(m_fs_index, _old_root_to_split.getIndexPosition()); // update old root
+    _new_sibling_node.writeToNext(m_fs_index); // append new sibling
 
-    if(_new_key < split_node.getFirstKey())
+    if(_new_key < _new_sibling_node.getFirstKey())
     {
-        // now can insert
-        if(!_child_to_split.insert(_new_key, _new_address))
+        // now must can insert, or something is wrong
+        if(!_old_root_to_split.insert(_new_key, _new_address))
         {
             throw std::logic_error("this must not happen");
         }
     }
     else
     {
-        // now can insert
-        if(!split_node.insert(_new_key, _new_address))
+        // now must can insert, or something is wrong
+        if(!_new_sibling_node.insert(_new_key, _new_address))
         {
             throw std::logic_error("this must not happen");
         }
     }
 
-    // rotate
-    if(_child_to_split.getFirstKey() < split_node.getFirstKey())
+    // rotate, this node is the new node, will ever have only 2 child nodes at this point, index 0 and 1
+    if(_old_root_to_split.getFirstKey() < _new_sibling_node.getFirstKey())
     {
-        m_keys[0] = _child_to_split.getFirstKey();
-        m_addresses[0] = _child_to_split.getIndexPosition();
-        m_keys[1] = split_node.getFirstKey();
-        m_addresses[1] = split_node.getIndexPosition();
+        m_keys[0] = _old_root_to_split.getFirstKey();
+        m_addresses[0] = _old_root_to_split.getIndexPosition();
+        m_keys[1] = _new_sibling_node.getFirstKey();
+        m_addresses[1] = _new_sibling_node.getIndexPosition();
     }
-    else if(_child_to_split.getFirstKey() > split_node.getFirstKey())
+    else if(_old_root_to_split.getFirstKey() > _new_sibling_node.getFirstKey())
     {
-        m_keys[0] = split_node.getFirstKey();
-        m_addresses[0] = split_node.getIndexPosition();
-        m_keys[1] = _child_to_split.getFirstKey();
-        m_addresses[1] = _child_to_split.getIndexPosition();
+        m_keys[0] = _new_sibling_node.getFirstKey();
+        m_addresses[0] = _new_sibling_node.getIndexPosition();
+        m_keys[1] = _old_root_to_split.getFirstKey();
+        m_addresses[1] = _old_root_to_split.getIndexPosition();
     }
     else
     {
@@ -365,7 +366,7 @@ void Node::splitAndRotate(Node & _child_to_split, uint32_t _new_key, uint64_t _n
     }
 
     m_count = 2;
-    writeToNext(m_fs_index); // append new
+    writeToNext(m_fs_index); // append this new root
 }
 
 std::string Node::toString()
@@ -388,7 +389,7 @@ std::string Node::toString()
             node.readToNext(m_fs_index);
 
             ss << "''''''''''''''''''''''''''''''''''''''''''''''''" << std::endl;
-            ss << "Node key: " << m_keys[i] << ", creation id: " << 1 + m_addresses[i] / m_block_size << ", index address: " << m_addresses[i] << std::endl;
+            ss << "Node key: <" << m_keys[i] << '>' << std::endl;
             ss << "''''''''''''''''''''''''''''''''''''''''''''''''" << std::endl;
             ss << node.toString();
         }
@@ -405,7 +406,7 @@ std::string Node::toString()
             leaf.readToNext(m_fs_index);
 
             ss << '\t' << "--------------------------------------------------" << std::endl;
-            ss << '\t' << '\t' << "Leaf key: " << m_keys[i] << ", creation id: " << 1 + m_addresses[i] / m_block_size << ", index address: " << m_addresses[i] << std::endl;
+            ss << '\t' << '\t' << "Leaf key: <" << m_keys[i] << ">, creation id: " << 1 + m_addresses[i] / m_block_size << ", index address: " << m_addresses[i] << std::endl;
             ss << leaf.toString();
         }
     }
