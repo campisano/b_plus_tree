@@ -87,7 +87,7 @@ int main(int _n_args, char ** _v_args)
     std::cout << "keys per leaf: " << NK << ", block size: " << BS << std::endl << std::endl;
 
     // allocate root node
-    Node * root = new Node(fs_index, NK, BS, true);
+    Node * root = new Node(fs_index, NK, BS);
 
     // write initial root
     root->writeToNext(fs_index);
@@ -112,7 +112,7 @@ int main(int _n_args, char ** _v_args)
         if(!inserted)
         {
             // create new root node
-            Node * new_root = new Node(fs_index, NK, BS, false);
+            Node * new_root = new Node(fs_index, NK, BS);
 
             // rotate
             new_root->splitAndRotate(*root, new_key, new_address);
