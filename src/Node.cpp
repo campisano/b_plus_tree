@@ -207,9 +207,6 @@ bool Node::insert(uint32_t _new_key, uint64_t _new_address)
                                 }
                                 else
                                 {
-                                    // get the previous successor, if split_node is the last one then there is no successor
-                                    uint64_t previous_pos_successor = (pos + 1 == m_count) ? -1 : m_addresses[pos + 1];
-
                                     // not duplicated code!
                                     // split
                                     Node split_node(m_fs_index, m_max_count, m_block_size);
@@ -414,4 +411,56 @@ std::string Node::toString()
     m_fs_index.seekg(pos); // restore original position
 
     return ss.str();
+}
+
+uint64_t Node::getAddressForKey(std::fstream & _fs_index, uint32_t _key)
+{
+    if(m_count == 0)
+    {
+        throw std::logic_error("Cannot find any key: Node is empty");
+    }
+
+    if(_key < m_keys[0])
+    {
+        std::stringstream ss;
+        ss << "Cannot find a key minor then first node key: " << _key << " < " << m_keys[0];
+        throw std::invalid_argument(ss.str());
+    }
+
+    IndexDataStructure * ids;
+
+    if(hasLeafs())
+    {
+        ids = new Leaf(m_max_count, m_block_size);
+    }
+    else
+    {
+        ids = new Node(m_fs_index, m_max_count, m_block_size);
+    }
+
+    uint64_t key;
+    bool found = false;
+
+    // find between first to last but one key
+    for(uint16_t i = 0; i < (m_count - 1); ++i)
+    {
+        if(_key >= m_keys[i] && _key < m_keys[i + 1])
+        {
+            found = true;
+            ids->loadAt(_fs_index, m_addresses[i]);
+            key = ids->getAddressForKey(_fs_index, _key);
+            break;
+        }
+    }
+
+    // if not found, then must be in last position
+    if(!found)
+    {
+        ids->loadAt(_fs_index, m_addresses[m_count - 1]);
+        key = ids->getAddressForKey(_fs_index, _key);
+    }
+
+    delete ids;
+
+    return key;
 }

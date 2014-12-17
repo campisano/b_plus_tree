@@ -6,6 +6,12 @@
 
 class IndexDataStructure
 {
+protected:
+    explicit IndexDataStructure(const uint16_t _max_count, const uint16_t _block_size);
+
+public:
+    virtual ~IndexDataStructure();
+
 public:
     inline bool isEmpty() { return m_count == m_max_count; }
     uint32_t getFirstKey();
@@ -18,10 +24,9 @@ public:
     void writeAt(std::fstream & _output_file, std::streampos _position);
     std::streampos getIndexPosition();
 
-protected:
-    explicit IndexDataStructure(const uint16_t _max_count, const uint16_t _block_size);
-    virtual ~IndexDataStructure();
+    virtual uint64_t getAddressForKey(std::fstream & _fs_index, uint32_t _key) = 0;
 
+protected:
     const uint16_t m_max_count;
     const uint16_t m_block_size;
     uint16_t m_real_data_size;

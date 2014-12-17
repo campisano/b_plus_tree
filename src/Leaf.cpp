@@ -28,7 +28,9 @@ void Leaf::insert(uint32_t _key, uint64_t _address)
     {
         if(m_keys[pos] == _key)
         {
-            throw std::invalid_argument("Duplicated Key");
+            std::stringstream ss;
+            ss << "Duplicated Key: " << _key << " at address " << _address;
+            throw std::invalid_argument(ss.str());
         }
         else if (m_keys[pos] > _key)
         {
@@ -66,4 +68,22 @@ std::string Leaf::toString()
     ss << '\t' << '\t' << "next_address: " << m_next_sibling_address << std::endl;
 
     return ss.str();
+}
+
+uint64_t Leaf::getAddressForKey(std::fstream & _fs_index, uint32_t _key)
+{
+    if(m_count == 0)
+    {
+        throw std::logic_error("Cannot find any key: Leaf is empty");
+    }
+
+    for(uint16_t i = 0; i < m_count; ++i)
+    {
+        if (m_keys[i] == _key)
+        {
+            return m_addresses[i];
+        }
+    }
+
+    throw std::out_of_range("Cannot find requested key");
 }
