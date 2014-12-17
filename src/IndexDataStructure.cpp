@@ -110,7 +110,7 @@ void IndexDataStructure::writeToNext(std::fstream & _output_file)
     _output_file.write((char *)(&m_next_sibling_address), sizeof(m_next_sibling_address));
 
     // skip free block space
-    _output_file.seekg(m_block_size - m_real_data_size, _output_file.cur);
+    _output_file.seekp(m_block_size - m_real_data_size, _output_file.cur);
 }
 
 void IndexDataStructure::loadAt(std::fstream & _input_file, std::streampos _position)
