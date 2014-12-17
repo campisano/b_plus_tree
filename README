@@ -1,0 +1,5 @@
+7z x cep_ordenado_ascii_uniq.dat.7z
+make clean
+make debug
+./BUILD/debug/b_tree_plus --create-index cep_ordenado_ascii_uniq.dat index.dat
+./BUILD/debug/b_tree_plus --find-data cep_ordenado_ascii_uniq.dat index.dat 20771020
